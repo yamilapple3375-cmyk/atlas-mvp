@@ -204,6 +204,69 @@ export async function getPersonFilmography(personId: number): Promise<SearchResu
   return Array.from(byKey.values()).filter((item) => item.posterUrl !== null);
 }
 
+interface TmdbCollectionRef {
+  id: number;
+  name: string;
+}
+
+interface TmdbMovieDetailRaw {
+  belongs_to_collection: TmdbCollectionRef | null;
+}
+
+export async function getMovieCollection(movieId: number): Promise<TmdbCollectionRef | null> {
+  const detail = await tmdbGet<TmdbMovieDetailRaw>(`/movie/${movieId}`, {});
+  return detail.belongs_to_collection ?? null;
+}
+
+interface TmdbCollectionPart {
+  id: number;
+  title: string;
+  release_date?: string;
+  poster_path: string | null;
+}
+
+interface TmdbCollectionResponse {
+  parts: TmdbCollectionPart[];
+}
+
+export interface CollectionMovie {
+  id: number;
+  title: string;
+  releaseDate: string | null;
+  posterUrl: string | null;
+}
+
+export async function getCollectionMovies(collectionId: number): Promise<CollectionMovie[]> {
+  const data = await tmdbGet<TmdbCollectionResponse>(`/collection/${collectionId}`, {});
+  return data.parts.map((p) => ({
+    id: p.id,
+    title: p.title,
+    releaseDate: p.release_date ?? null,
+    posterUrl: p.poster_path ? `${TMDB_IMAGE_BASE}${p.poster_path}` : null,
+  }));
+}
+
+interface TmdbTvDetailRaw {
+  number_of_seasons: number;
+  status: string;
+  name: string;
+}
+
+export interface TvSeasonInfo {
+  numberOfSeasons: number;
+  status: string;
+  name: string;
+}
+
+export async function getTvSeasonInfo(tvId: number): Promise<TvSeasonInfo> {
+  const detail = await tmdbGet<TmdbTvDetailRaw>(`/tv/${tvId}`, {});
+  return {
+    numberOfSeasons: detail.number_of_seasons,
+    status: detail.status,
+    name: detail.name,
+  };
+}
+
 export async function getRuntimeMinutes(
   id: number,
   mediaType: "movie" | "tv",

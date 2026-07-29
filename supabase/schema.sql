@@ -52,3 +52,25 @@ alter table public.entertainment_profiles
 alter table public.feedback_history
   add column if not exists season int,
   add column if not exists episode int;
+
+-- New-release notifications: tracks what's already been emailed so the
+-- daily cron job doesn't repeat itself. 'season_baseline' rows record the
+-- season count last seen for a liked series; 'sequel' rows record a
+-- sequel's own TMDB id once it's been emailed about.
+create table if not exists public.notified_releases (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  media_id bigint not null,
+  media_type text not null,
+  kind text not null,
+  detail text not null default '',
+  created_at timestamptz not null default now()
+);
+
+alter table public.notified_releases enable row level security;
+
+create policy "Users manage their own notifications"
+  on public.notified_releases
+  for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
