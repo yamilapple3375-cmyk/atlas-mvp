@@ -26,12 +26,22 @@ export default function Home() {
 
       <div className="mt-10">
         {hasProfile === null ? null : hasProfile ? (
-          <Link
-            href="/context"
-            className="rounded-full bg-white px-8 py-3 text-base font-medium text-black transition hover:bg-zinc-200"
-          >
-            What should I watch today?
-          </Link>
+          <>
+            <Link
+              href="/context"
+              className="rounded-full bg-white px-8 py-3 text-base font-medium text-black transition hover:bg-zinc-200"
+            >
+              What should I watch today?
+            </Link>
+            <div>
+              <Link
+                href="/discovery-weekly"
+                className="mt-4 inline-block text-sm text-zinc-400 underline underline-offset-4 hover:text-zinc-200"
+              >
+                ✨ This week&apos;s Discovery pick
+              </Link>
+            </div>
+          </>
         ) : (
           <Link
             href="/onboarding"

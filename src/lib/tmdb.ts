@@ -63,6 +63,8 @@ export interface DiscoverParams {
   page: number;
   runtimeGte?: number;
   runtimeLte?: number;
+  voteCountGte?: number;
+  sortBy?: string;
 }
 
 export interface DiscoverItem {
@@ -92,8 +94,8 @@ export async function discoverMovies(params: DiscoverParams): Promise<DiscoverIt
   const data = await tmdbGet<TmdbDiscoverResponse>("/discover/movie", {
     with_genres: params.withGenres.join("|") || undefined,
     without_genres: params.withoutGenres.join(",") || undefined,
-    sort_by: "popularity.desc",
-    "vote_count.gte": 50,
+    sort_by: params.sortBy ?? "popularity.desc",
+    "vote_count.gte": params.voteCountGte ?? 50,
     include_adult: false,
     page: params.page,
     "with_runtime.gte": params.runtimeGte,
@@ -106,8 +108,8 @@ export async function discoverTv(params: DiscoverParams): Promise<DiscoverItem[]
   const data = await tmdbGet<TmdbDiscoverResponse>("/discover/tv", {
     with_genres: params.withGenres.join("|") || undefined,
     without_genres: params.withoutGenres.join(",") || undefined,
-    sort_by: "popularity.desc",
-    "vote_count.gte": 50,
+    sort_by: params.sortBy ?? "popularity.desc",
+    "vote_count.gte": params.voteCountGte ?? 50,
     include_adult: false,
     page: params.page,
   });
