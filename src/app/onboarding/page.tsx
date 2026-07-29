@@ -4,23 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GENRES } from "@/lib/genres";
 import { saveProfile } from "@/lib/profile";
-import {
-  Endings,
-  EntertainmentProfile,
-  FormatPreference,
-  GenreKey,
-  Pacing,
-  Tone,
-} from "@/lib/types";
+import { EntertainmentProfile, FormatPreference, GenreKey, Tone } from "@/lib/types";
 
-const STEPS = [
-  "favoriteGenres",
-  "avoidGenres",
-  "pacing",
-  "tone",
-  "endings",
-  "format",
-] as const;
+const STEPS = ["favoriteGenres", "avoidGenres", "tone", "format"] as const;
 
 function toggle<T>(list: T[], value: T): T[] {
   return list.includes(value)
@@ -34,9 +20,7 @@ export default function OnboardingPage() {
 
   const [favoriteGenres, setFavoriteGenres] = useState<GenreKey[]>([]);
   const [avoidGenres, setAvoidGenres] = useState<GenreKey[]>([]);
-  const [pacing, setPacing] = useState<Pacing | null>(null);
   const [tone, setTone] = useState<Tone | null>(null);
-  const [endings, setEndings] = useState<Endings | null>(null);
   const [formatPreference, setFormatPreference] =
     useState<FormatPreference | null>(null);
   const [saving, setSaving] = useState(false);
@@ -50,12 +34,8 @@ export default function OnboardingPage() {
         return favoriteGenres.length > 0;
       case "avoidGenres":
         return true;
-      case "pacing":
-        return pacing !== null;
       case "tone":
         return tone !== null;
-      case "endings":
-        return endings !== null;
       case "format":
         return formatPreference !== null;
       default:
@@ -71,9 +51,7 @@ export default function OnboardingPage() {
     const profile: EntertainmentProfile = {
       favoriteGenres,
       avoidGenres,
-      pacing: pacing!,
       tone: tone!,
-      endings: endings!,
       formatPreference: formatPreference!,
       createdAt: new Date().toISOString(),
     };
@@ -123,19 +101,6 @@ export default function OnboardingPage() {
         </QuestionBlock>
       )}
 
-      {stepKey === "pacing" && (
-        <QuestionBlock title="Do you prefer fast-paced or slow-paced stories?">
-          <ChoiceRow
-            options={[
-              { value: "fast", label: "Fast-paced" },
-              { value: "slow", label: "Slow-paced" },
-            ]}
-            value={pacing}
-            onChange={(v) => setPacing(v as Pacing)}
-          />
-        </QuestionBlock>
-      )}
-
       {stepKey === "tone" && (
         <QuestionBlock title="What tone are you usually looking for?">
           <ChoiceRow
@@ -145,19 +110,6 @@ export default function OnboardingPage() {
             ]}
             value={tone}
             onChange={(v) => setTone(v as Tone)}
-          />
-        </QuestionBlock>
-      )}
-
-      {stepKey === "endings" && (
-        <QuestionBlock title="How do you like your endings?">
-          <ChoiceRow
-            options={[
-              { value: "closed", label: "Closed and resolved" },
-              { value: "open", label: "Open or unexpected" },
-            ]}
-            value={endings}
-            onChange={(v) => setEndings(v as Endings)}
           />
         </QuestionBlock>
       )}

@@ -18,6 +18,10 @@ const MOOD_OPTIONS: { value: Mood; label: string }[] = [
   { value: "relajarme", label: "I want to unwind" },
   { value: "accion", label: "I want action" },
   { value: "intenso", label: "I want something intense" },
+  { value: "llorar", label: "I want to feel something" },
+  { value: "miedo", label: "I want to be scared" },
+  { value: "romance", label: "I want romance" },
+  { value: "nostalgia", label: "I want something comforting" },
 ];
 
 const TIME_OPTIONS: { value: TimeBudget; label: string; hint: string }[] = [

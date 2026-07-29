@@ -5,9 +5,7 @@ create table if not exists public.entertainment_profiles (
   user_id uuid primary key references auth.users (id) on delete cascade,
   favorite_genres text[] not null default '{}',
   avoid_genres text[] not null default '{}',
-  pacing text not null,
   tone text not null,
-  endings text not null,
   format_preference text not null,
   created_at timestamptz not null default now()
 );
@@ -38,3 +36,10 @@ create policy "Users manage their own feedback"
   for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Migration: pacing and endings were dropped from onboarding (binary
+-- fast/slow and closed/open questions with no real TMDB signal behind
+-- them). Run this once against an existing database that still has them.
+alter table public.entertainment_profiles
+  drop column if exists pacing,
+  drop column if exists endings;

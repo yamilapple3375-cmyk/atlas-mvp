@@ -13,6 +13,10 @@ export const MOOD_PHRASE: Record<Mood, string> = {
   relajarme: "in the mood to unwind",
   accion: "in the mood for action",
   intenso: "in the mood for something intense",
+  llorar: "in the mood to feel something",
+  miedo: "in the mood to be scared",
+  romance: "in the mood for romance",
+  nostalgia: "in the mood for something comforting",
 };
 
 export const TIME_PHRASE: Record<ContextInput["timeBudget"], string> = {

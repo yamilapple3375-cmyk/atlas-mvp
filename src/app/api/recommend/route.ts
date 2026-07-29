@@ -9,6 +9,7 @@ import {
   DiscoverItem,
 } from "@/lib/tmdb";
 import { buildExplanation, computeConfidence, matchedFavoriteGenres } from "@/lib/explain";
+import { pickWithAi } from "@/lib/claudeRecommend";
 import {
   ContextInput,
   EntertainmentProfile,
@@ -18,6 +19,7 @@ import {
   MediaType,
   Mood,
   Recommendation,
+  Tone,
 } from "@/lib/types";
 
 interface RecommendRequestBody {
@@ -32,6 +34,15 @@ const MOOD_BOOST: Record<Mood, GenreKey[]> = {
   relajarme: ["familia", "comedia"],
   accion: ["accion"],
   intenso: ["thriller"],
+  llorar: ["drama", "romance"],
+  miedo: ["terror", "misterio"],
+  romance: ["romance"],
+  nostalgia: ["familia", "animacion", "aventura"],
+};
+
+const TONE_BOOST: Record<Tone, GenreKey[]> = {
+  light: ["comedia", "familia", "animacion", "aventura"],
+  intense: ["drama", "thriller", "terror", "crimen", "guerra"],
 };
 
 const FEEDBACK_SCORE: Record<FeedbackValue, number> = {
@@ -108,12 +119,14 @@ function scoreCandidate(
   candidate: DiscoverItem,
   index: number,
   favoriteGenreIds: number[],
+  toneGenreIds: number[],
   learnedWeights: Map<number, number>,
 ): number {
   const positionScore = Math.max(0, 20 - index);
   const favoriteMatch = candidate.genreIds.filter((id) => favoriteGenreIds.includes(id)).length * 15;
+  const toneMatch = candidate.genreIds.filter((id) => toneGenreIds.includes(id)).length * 8;
   const learned = candidate.genreIds.reduce((sum, id) => sum + (learnedWeights.get(id) ?? 0), 0);
-  return positionScore + favoriteMatch + learned;
+  return positionScore + favoriteMatch + toneMatch + learned;
 }
 
 export async function POST(request: Request) {
@@ -137,7 +150,8 @@ export async function POST(request: Request) {
   const learnedWeights = computeLearnedWeights(relevantHistory, mediaType);
 
   const moodBoost = MOOD_BOOST[context.mood] ?? [];
-  const withGenreKeys = Array.from(new Set([...profile.favoriteGenres, ...moodBoost]));
+  const toneBoost = TONE_BOOST[profile.tone] ?? [];
+  const withGenreKeys = Array.from(new Set([...profile.favoriteGenres, ...moodBoost, ...toneBoost]));
   const startPage = Math.floor(Math.random() * 3) + 1;
 
   let candidates: DiscoverItem[] = [];
@@ -169,15 +183,24 @@ export async function POST(request: Request) {
   }
 
   const favoriteGenreIds = genreIds(profile.favoriteGenres, mediaType);
+  const toneGenreIds = genreIds(TONE_BOOST[profile.tone] ?? [], mediaType);
   const scored = candidates
     .map((candidate, index) => ({
       candidate,
-      score: scoreCandidate(candidate, index, favoriteGenreIds, learnedWeights),
+      score: scoreCandidate(candidate, index, favoriteGenreIds, toneGenreIds, learnedWeights),
     }))
     .sort((a, b) => b.score - a.score);
 
   const topPool = scored.slice(0, 6).map((s) => s.candidate);
-  const chosen = topPool[Math.floor(Math.random() * topPool.length)];
+
+  const recentlyLikedTitles = relevantHistory
+    .filter((e) => e.mediaType === mediaType && e.feedback === "like")
+    .map((e) => e.title);
+  const aiPick = await pickWithAi(profile, context, topPool, mediaType, recentlyLikedTitles);
+
+  const chosen = aiPick
+    ? (topPool.find((c) => c.id === aiPick.id) ?? topPool[0])
+    : topPool[Math.floor(Math.random() * topPool.length)];
   const alternatives = topPool.filter((c) => c.id !== chosen.id).slice(0, 3);
 
   const matchedGenres = matchedFavoriteGenres(profile.favoriteGenres, mediaType, chosen.genreIds);
@@ -199,7 +222,10 @@ export async function POST(request: Request) {
     year: chosen.year,
     runtimeMinutes,
     voteAverage: chosen.voteAverage,
-    explanation: buildExplanation(chosen.title, matchedGenres, context, learnedBoost),
+    explanation:
+      aiPick && aiPick.id === chosen.id
+        ? aiPick.reason
+        : buildExplanation(chosen.title, matchedGenres, context, learnedBoost),
     confidence: computeConfidence(matchedGenres.length, profile.favoriteGenres.length, chosen.voteAverage),
     genreIds: chosen.genreIds,
     watchProviders,

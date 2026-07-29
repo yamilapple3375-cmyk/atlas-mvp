@@ -16,22 +16,27 @@ export type GenreKey =
   | "guerra";
 
 export type FormatPreference = "movies" | "series" | "both";
-export type Pacing = "fast" | "slow";
 export type Tone = "light" | "intense";
-export type Endings = "closed" | "open";
 
 export interface EntertainmentProfile {
   favoriteGenres: GenreKey[];
   avoidGenres: GenreKey[];
-  pacing: Pacing;
   tone: Tone;
-  endings: Endings;
   formatPreference: FormatPreference;
   createdAt: string;
 }
 
 export type Company = "solo" | "pareja" | "familia";
-export type Mood = "reir" | "pensar" | "relajarme" | "accion" | "intenso";
+export type Mood =
+  | "reir"
+  | "pensar"
+  | "relajarme"
+  | "accion"
+  | "intenso"
+  | "llorar"
+  | "miedo"
+  | "romance"
+  | "nostalgia";
 export type TimeBudget = "corto" | "tarde" | "completo";
 
 export interface ContextInput {

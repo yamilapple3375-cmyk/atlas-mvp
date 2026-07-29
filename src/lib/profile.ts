@@ -12,9 +12,7 @@ const CONTEXT_KEY = "atlas_context";
 interface ProfileRow {
   favorite_genres: string[];
   avoid_genres: string[];
-  pacing: string;
   tone: string;
-  endings: string;
   format_preference: string;
   created_at: string;
 }
@@ -41,9 +39,7 @@ export async function getProfile(): Promise<EntertainmentProfile | null> {
   return {
     favoriteGenres: data.favorite_genres as EntertainmentProfile["favoriteGenres"],
     avoidGenres: data.avoid_genres as EntertainmentProfile["avoidGenres"],
-    pacing: data.pacing as EntertainmentProfile["pacing"],
     tone: data.tone as EntertainmentProfile["tone"],
-    endings: data.endings as EntertainmentProfile["endings"],
     formatPreference: data.format_preference as EntertainmentProfile["formatPreference"],
     createdAt: data.created_at,
   };
@@ -55,9 +51,7 @@ export async function saveProfile(profile: EntertainmentProfile): Promise<void> 
     user_id: userId,
     favorite_genres: profile.favoriteGenres,
     avoid_genres: profile.avoidGenres,
-    pacing: profile.pacing,
     tone: profile.tone,
-    endings: profile.endings,
     format_preference: profile.formatPreference,
     created_at: profile.createdAt,
   });
