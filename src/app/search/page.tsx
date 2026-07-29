@@ -14,6 +14,7 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const feedbackByKey = useRef(new Map<string, FeedbackValue>());
+  const [libraryKeys, setLibraryKeys] = useState<Set<string>>(new Set());
 
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
   const [detail, setDetail] = useState<ItemDetail | null>(null);
@@ -22,9 +23,13 @@ export default function SearchPage() {
 
   useEffect(() => {
     getHistory().then((history) => {
+      const keys = new Set<string>();
       for (const entry of history) {
-        feedbackByKey.current.set(`${entry.mediaType}-${entry.id}`, entry.feedback);
+        const key = `${entry.mediaType}-${entry.id}`;
+        feedbackByKey.current.set(key, entry.feedback);
+        keys.add(key);
       }
+      setLibraryKeys(keys);
     });
   }, []);
 
@@ -70,15 +75,16 @@ export default function SearchPage() {
     return () => clearTimeout(timeout);
   }, [query]);
 
-  async function toggleFavorite(item: LibraryItem) {
-    const nextFeedback: FeedbackValue = item.feedback === "like" ? "seen" : "like";
+  async function applyFeedback(item: LibraryItem, nextFeedback: FeedbackValue) {
+    const key = `${item.mediaType}-${item.id}`;
     setResults((current) =>
       current.map((i) =>
         i.id === item.id && i.mediaType === item.mediaType ? { ...i, feedback: nextFeedback } : i,
       ),
     );
     setSelectedItem((s) => (s && s.id === item.id ? { ...s, feedback: nextFeedback } : s));
-    feedbackByKey.current.set(`${item.mediaType}-${item.id}`, nextFeedback);
+    feedbackByKey.current.set(key, nextFeedback);
+    setLibraryKeys((current) => new Set(current).add(key));
     try {
       await addHistoryEntry({
         id: item.id,
@@ -89,8 +95,20 @@ export default function SearchPage() {
         at: new Date().toISOString(),
       });
     } catch (err) {
-      console.error("Couldn't update favorite:", err);
+      console.error("Couldn't update feedback:", err);
     }
+  }
+
+  function toggleFavorite(item: LibraryItem) {
+    applyFeedback(item, item.feedback === "like" ? "seen" : "like");
+  }
+
+  function markSeen(item: LibraryItem) {
+    applyFeedback(item, "seen");
+  }
+
+  function dislikeItem(item: LibraryItem) {
+    applyFeedback(item, "dislike");
   }
 
   async function openDetail(item: LibraryItem) {
@@ -174,6 +192,9 @@ export default function SearchPage() {
           error={detailError}
           onClose={closeDetail}
           onToggleFavorite={toggleFavorite}
+          onMarkSeen={markSeen}
+          onDislike={dislikeItem}
+          alreadyInLibrary={libraryKeys.has(`${selectedItem.mediaType}-${selectedItem.id}`)}
         />
       )}
     </main>

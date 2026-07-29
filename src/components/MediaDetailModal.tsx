@@ -20,6 +20,9 @@ export default function MediaDetailModal({
   error,
   onClose,
   onToggleFavorite,
+  onMarkSeen,
+  onDislike,
+  alreadyInLibrary,
 }: {
   item: LibraryItem;
   detail: ItemDetail | null;
@@ -27,6 +30,9 @@ export default function MediaDetailModal({
   error: string | null;
   onClose: () => void;
   onToggleFavorite: (item: LibraryItem) => void;
+  onMarkSeen?: (item: LibraryItem) => void;
+  onDislike?: (item: LibraryItem) => void;
+  alreadyInLibrary?: boolean;
 }) {
   return (
     <div
@@ -126,12 +132,34 @@ export default function MediaDetailModal({
           </>
         )}
 
-        <button
-          onClick={() => onToggleFavorite(item)}
-          className="mt-8 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black hover:bg-zinc-200"
-        >
-          {item.feedback === "like" ? "♥ Favorited" : "♡ Mark as favorite"}
-        </button>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <button
+            onClick={() => onToggleFavorite(item)}
+            className="rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black hover:bg-zinc-200"
+          >
+            {item.feedback === "like" ? "♥ Favorited" : "♡ Mark as favorite"}
+          </button>
+
+          {onMarkSeen && (
+            <button
+              onClick={() => onMarkSeen(item)}
+              disabled={alreadyInLibrary}
+              className="rounded-full border border-zinc-700 px-5 py-2.5 text-sm text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {alreadyInLibrary ? "✓ In your library" : "+ Add to library"}
+            </button>
+          )}
+
+          {onDislike && (
+            <button
+              onClick={() => onDislike(item)}
+              disabled={item.feedback === "dislike"}
+              className="rounded-full border border-zinc-700 px-5 py-2.5 text-sm text-zinc-400 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {item.feedback === "dislike" ? "Not interested" : "🚫 Not interested"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
