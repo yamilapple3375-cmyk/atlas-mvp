@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { WatchProvider } from "@/lib/types";
 import { LibraryItem } from "@/lib/useLibraryItems";
@@ -22,6 +23,7 @@ export default function MediaDetailModal({
   onToggleFavorite,
   onMarkSeen,
   onDislike,
+  onUpdateProgress,
   alreadyInLibrary,
 }: {
   item: LibraryItem;
@@ -32,8 +34,11 @@ export default function MediaDetailModal({
   onToggleFavorite: (item: LibraryItem) => void;
   onMarkSeen?: (item: LibraryItem) => void;
   onDislike?: (item: LibraryItem) => void;
+  onUpdateProgress?: (item: LibraryItem, season: number, episode: number) => void;
   alreadyInLibrary?: boolean;
 }) {
+  const [season, setSeason] = useState(item.season ?? 1);
+  const [episode, setEpisode] = useState(item.episode ?? 1);
   return (
     <div
       className="fixed inset-0 z-20 flex items-end justify-center bg-black/70 sm:items-center"
@@ -130,6 +135,42 @@ export default function MediaDetailModal({
               </p>
             )}
           </>
+        )}
+
+        {item.mediaType === "tv" && onUpdateProgress && (
+          <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Continue watching
+            </p>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm text-zinc-300">
+                Season
+                <input
+                  type="number"
+                  min={1}
+                  value={season}
+                  onChange={(e) => setSeason(Math.max(1, Number(e.target.value) || 1))}
+                  className="w-16 rounded-lg border border-zinc-700 bg-transparent px-2 py-1 text-sm text-white"
+                />
+              </label>
+              <label className="flex items-center gap-2 text-sm text-zinc-300">
+                Episode
+                <input
+                  type="number"
+                  min={1}
+                  value={episode}
+                  onChange={(e) => setEpisode(Math.max(1, Number(e.target.value) || 1))}
+                  className="w-16 rounded-lg border border-zinc-700 bg-transparent px-2 py-1 text-sm text-white"
+                />
+              </label>
+            </div>
+            <button
+              onClick={() => onUpdateProgress(item, season, episode)}
+              className="mt-3 rounded-full border border-zinc-700 px-4 py-1.5 text-xs text-zinc-200 transition hover:border-zinc-500"
+            >
+              {item.season != null ? "Update progress" : "Save progress"}
+            </button>
+          </div>
         )}
 
         <div className="mt-8 flex flex-wrap gap-3">

@@ -23,6 +23,8 @@ interface FeedbackRow {
   title: string;
   feedback: string;
   genre_ids: number[] | null;
+  season: number | null;
+  episode: number | null;
   created_at: string;
 }
 
@@ -91,6 +93,8 @@ export async function getHistory(): Promise<FeedbackEntry[]> {
     title: row.title,
     feedback: row.feedback as FeedbackValue,
     genreIds: row.genre_ids ?? [],
+    season: row.season,
+    episode: row.episode,
     at: row.created_at,
   }));
 }
@@ -104,6 +108,8 @@ export async function addHistoryEntry(entry: FeedbackEntry): Promise<void> {
     title: entry.title,
     feedback: entry.feedback,
     genre_ids: entry.genreIds,
+    season: entry.season ?? null,
+    episode: entry.episode ?? null,
     created_at: entry.at,
   });
   if (error) throw new Error(error.message);

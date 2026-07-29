@@ -12,6 +12,8 @@ export interface LibraryItem {
   posterUrl: string | null;
   genreIds: number[];
   feedback: FeedbackValue;
+  season?: number | null;
+  episode?: number | null;
 }
 
 export function useLibraryItems() {
@@ -70,6 +72,8 @@ export function useLibraryItems() {
             posterUrl: details?.posterUrl ?? null,
             genreIds: details?.genreIds ?? c.genreIds,
             feedback: c.feedback,
+            season: c.season,
+            episode: c.episode,
           };
         });
 

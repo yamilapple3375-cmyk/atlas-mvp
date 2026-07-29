@@ -45,6 +45,31 @@ export default function LibraryPage() {
     }
   }
 
+  async function updateProgress(item: LibraryItem, season: number, episode: number) {
+    setItems((current) =>
+      current
+        ? current.map((i) =>
+            i.id === item.id && i.mediaType === item.mediaType ? { ...i, season, episode } : i,
+          )
+        : current,
+    );
+    setSelectedItem((s) => (s && s.id === item.id ? { ...s, season, episode } : s));
+    try {
+      await addHistoryEntry({
+        id: item.id,
+        mediaType: item.mediaType,
+        title: item.title,
+        feedback: item.feedback,
+        genreIds: item.genreIds,
+        season,
+        episode,
+        at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Couldn't update progress:", err);
+    }
+  }
+
   async function openDetail(item: LibraryItem) {
     setSelectedItem(item);
     setDetail(null);
@@ -71,6 +96,9 @@ export default function LibraryPage() {
   const filteredItems =
     items?.filter((item) => mediaFilter === "all" || item.mediaType === mediaFilter) ?? [];
   const favorites = filteredItems.filter((item) => item.feedback === "like");
+  const continueWatching = filteredItems.filter(
+    (item) => item.mediaType === "tv" && (item.season != null || item.episode != null),
+  );
   const genreBuckets: { def: GenreDef; items: LibraryItem[] }[] =
     items === null
       ? []
@@ -136,6 +164,15 @@ export default function LibraryPage() {
         </p>
       )}
 
+      {continueWatching.length > 0 && (
+        <PosterRow
+          title="Continue Watching"
+          items={continueWatching}
+          onToggleFavorite={toggleFavorite}
+          onOpen={openDetail}
+        />
+      )}
+
       {favorites.length > 0 && (
         <PosterRow title="Favorites" items={favorites} onToggleFavorite={toggleFavorite} onOpen={openDetail} />
       )}
@@ -158,6 +195,7 @@ export default function LibraryPage() {
           error={detailError}
           onClose={closeDetail}
           onToggleFavorite={toggleFavorite}
+          onUpdateProgress={updateProgress}
         />
       )}
     </main>

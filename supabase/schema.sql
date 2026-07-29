@@ -26,6 +26,8 @@ create table if not exists public.feedback_history (
   title text not null,
   feedback text not null,
   genre_ids int[] not null default '{}',
+  season int,
+  episode int,
   created_at timestamptz not null default now()
 );
 
@@ -43,3 +45,10 @@ create policy "Users manage their own feedback"
 alter table public.entertainment_profiles
   drop column if exists pacing,
   drop column if exists endings;
+
+-- Migration: Continue Watching needs a season/episode checkpoint per
+-- series. Run this once against an existing database that doesn't have
+-- these columns yet.
+alter table public.feedback_history
+  add column if not exists season int,
+  add column if not exists episode int;

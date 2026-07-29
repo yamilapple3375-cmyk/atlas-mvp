@@ -111,6 +111,31 @@ export default function SearchPage() {
     applyFeedback(item, "dislike");
   }
 
+  async function updateProgress(item: LibraryItem, season: number, episode: number) {
+    const key = `${item.mediaType}-${item.id}`;
+    setResults((current) =>
+      current.map((i) =>
+        i.id === item.id && i.mediaType === item.mediaType ? { ...i, season, episode } : i,
+      ),
+    );
+    setSelectedItem((s) => (s && s.id === item.id ? { ...s, season, episode } : s));
+    setLibraryKeys((current) => new Set(current).add(key));
+    try {
+      await addHistoryEntry({
+        id: item.id,
+        mediaType: item.mediaType,
+        title: item.title,
+        feedback: item.feedback,
+        genreIds: item.genreIds,
+        season,
+        episode,
+        at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Couldn't update progress:", err);
+    }
+  }
+
   async function openDetail(item: LibraryItem) {
     setSelectedItem(item);
     setDetail(null);
@@ -194,6 +219,7 @@ export default function SearchPage() {
           onToggleFavorite={toggleFavorite}
           onMarkSeen={markSeen}
           onDislike={dislikeItem}
+          onUpdateProgress={updateProgress}
           alreadyInLibrary={libraryKeys.has(`${selectedItem.mediaType}-${selectedItem.id}`)}
         />
       )}

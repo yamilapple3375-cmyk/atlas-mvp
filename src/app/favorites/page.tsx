@@ -44,6 +44,31 @@ export default function FavoritesPage() {
     }
   }
 
+  async function updateProgress(item: LibraryItem, season: number, episode: number) {
+    setItems((current) =>
+      current
+        ? current.map((i) =>
+            i.id === item.id && i.mediaType === item.mediaType ? { ...i, season, episode } : i,
+          )
+        : current,
+    );
+    setSelectedItem((s) => (s && s.id === item.id ? { ...s, season, episode } : s));
+    try {
+      await addHistoryEntry({
+        id: item.id,
+        mediaType: item.mediaType,
+        title: item.title,
+        feedback: item.feedback,
+        genreIds: item.genreIds,
+        season,
+        episode,
+        at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Couldn't update progress:", err);
+    }
+  }
+
   async function openDetail(item: LibraryItem) {
     setSelectedItem(item);
     setDetail(null);
@@ -127,6 +152,7 @@ export default function FavoritesPage() {
           error={detailError}
           onClose={closeDetail}
           onToggleFavorite={toggleFavorite}
+          onUpdateProgress={updateProgress}
         />
       )}
     </main>

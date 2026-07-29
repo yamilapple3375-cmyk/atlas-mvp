@@ -56,6 +56,13 @@ export default function PosterRow({
               </span>
             </button>
             <p className="mt-1 truncate text-xs text-zinc-500">{item.title}</p>
+            {(item.season != null || item.episode != null) && (
+              <p className="truncate text-[10px] text-zinc-600">
+                {item.season != null ? `S${item.season}` : ""}
+                {item.season != null && item.episode != null ? " · " : ""}
+                {item.episode != null ? `E${item.episode}` : ""}
+              </p>
+            )}
           </div>
         ))}
       </div>

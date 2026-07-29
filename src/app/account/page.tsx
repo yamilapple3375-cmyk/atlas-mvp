@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ensureSession, supabase } from "@/lib/supabaseClient";
 
@@ -114,10 +115,18 @@ export default function AccountPage() {
       {loading ? (
         <p className="mt-6 text-sm text-zinc-500">Loading…</p>
       ) : email ? (
-        <p className="mt-4 text-sm text-zinc-300">
-          Signed in as <span className="text-white">{email}</span>. Your library follows you on
-          any device — just log in with this email.
-        </p>
+        <>
+          <p className="mt-4 text-sm text-zinc-300">
+            Signed in as <span className="text-white">{email}</span>. Your library follows you on
+            any device — just log in with this email.
+          </p>
+          <Link
+            href="/wrapped"
+            className="mt-6 inline-block text-sm text-zinc-400 underline underline-offset-4 hover:text-zinc-200"
+          >
+            ✨ Your Atlas Wrapped — see your taste in numbers
+          </Link>
+        </>
       ) : (
         <>
           <p className="mt-4 text-sm text-zinc-500">

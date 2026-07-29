@@ -54,6 +54,8 @@ export interface FeedbackEntry {
   title: string;
   feedback: FeedbackValue;
   genreIds: number[];
+  season?: number | null;
+  episode?: number | null;
   at: string;
 }
 
