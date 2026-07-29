@@ -149,9 +149,11 @@ export async function POST(request: Request) {
   );
   const learnedWeights = computeLearnedWeights(relevantHistory, mediaType);
 
+  // The mood the user picked right now is the hard gate on what genres are
+  // even eligible — favorite genres and tone only influence ranking within
+  // that pool (below), so picking "I want to laugh" never surfaces action.
   const moodBoost = MOOD_BOOST[context.mood] ?? [];
-  const toneBoost = TONE_BOOST[profile.tone] ?? [];
-  const withGenreKeys = Array.from(new Set([...profile.favoriteGenres, ...moodBoost, ...toneBoost]));
+  const withGenreKeys = moodBoost;
   const startPage = Math.floor(Math.random() * 3) + 1;
 
   let candidates: DiscoverItem[] = [];
