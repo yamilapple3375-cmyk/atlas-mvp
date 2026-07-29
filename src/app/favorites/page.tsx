@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { addHistoryEntry } from "@/lib/profile";
 import { GenreDef, genresForItem, GENRES } from "@/lib/genres";
@@ -9,7 +8,7 @@ import { LibraryItem, useLibraryItems } from "@/lib/useLibraryItems";
 import PosterRow from "@/components/PosterRow";
 import MediaDetailModal, { ItemDetail } from "@/components/MediaDetailModal";
 
-export default function LibraryPage() {
+export default function FavoritesPage() {
   const { items, setItems, error } = useLibraryItems();
 
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
@@ -67,43 +66,30 @@ export default function LibraryPage() {
   }
 
   const favorites = items?.filter((item) => item.feedback === "like") ?? [];
-  const genreBuckets: { def: GenreDef; items: LibraryItem[] }[] =
-    items === null
-      ? []
-      : GENRES.map((def) => ({
-          def,
-          items: items.filter((item) =>
-            genresForItem(item.mediaType, item.genreIds).some((g) => g.key === def.key),
-          ),
-        })).filter((bucket) => bucket.items.length > 0);
+  const genreBuckets: { def: GenreDef; items: LibraryItem[] }[] = GENRES.map((def) => ({
+    def,
+    items: favorites.filter((item) =>
+      genresForItem(item.mediaType, item.genreIds).some((g) => g.key === def.key),
+    ),
+  })).filter((bucket) => bucket.items.length > 0);
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-16">
-      <div className="mb-8 flex items-center justify-end text-sm text-zinc-500">
-        <Link href="/onboarding" className="underline underline-offset-4 hover:text-zinc-300">
-          Redo my profile
-        </Link>
-      </div>
-
-      <h1 className="text-2xl font-semibold">My Library</h1>
+      <h1 className="text-2xl font-semibold">Favorites</h1>
       <p className="mt-1 text-sm text-zinc-500">
-        Everything you&apos;ve rated, always at hand.
+        Everything you&apos;ve marked with a ♥.
       </p>
 
       {error && <p className="mt-6 text-sm text-zinc-300">{error}</p>}
 
       {items === null && !error && (
-        <p className="mt-10 text-center text-sm text-zinc-500">Loading your library…</p>
+        <p className="mt-10 text-center text-sm text-zinc-500">Loading your favorites…</p>
       )}
 
-      {items !== null && items.length === 0 && (
+      {items !== null && favorites.length === 0 && (
         <p className="mt-10 text-center text-sm text-zinc-500">
-          Your library is empty. Get a recommendation and rate it — it&apos;ll show up here.
+          No favorites yet. Mark a ♡ in My Library or after a recommendation to add one here.
         </p>
-      )}
-
-      {favorites.length > 0 && (
-        <PosterRow title="Favorites" items={favorites} onToggleFavorite={toggleFavorite} onOpen={openDetail} />
       )}
 
       {genreBuckets.map(({ def, items: bucketItems }) => (
@@ -113,6 +99,7 @@ export default function LibraryPage() {
           items={bucketItems}
           onToggleFavorite={toggleFavorite}
           onOpen={openDetail}
+          wrap
         />
       ))}
 

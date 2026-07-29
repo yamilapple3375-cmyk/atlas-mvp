@@ -14,6 +14,11 @@ const TABS = [
       path.startsWith("/discovery-weekly"),
   },
   { href: "/library", label: "Library", match: (path: string) => path.startsWith("/library") },
+  {
+    href: "/favorites",
+    label: "Favorites",
+    match: (path: string) => path.startsWith("/favorites"),
+  },
   { href: "/account", label: "Account", match: (path: string) => path.startsWith("/account") },
 ];
 
