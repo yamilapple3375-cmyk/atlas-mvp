@@ -17,13 +17,23 @@ export default function AccountPage() {
   const [loginStatus, setLoginStatus] = useState<Status>("idle");
   const [loginError, setLoginError] = useState<string | null>(null);
 
+  const [otpCode, setOtpCode] = useState("");
+  const [verifyStatus, setVerifyStatus] = useState<Status>("idle");
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+
+  const [linkOtpCode, setLinkOtpCode] = useState("");
+  const [linkVerifyStatus, setLinkVerifyStatus] = useState<Status>("idle");
+  const [linkVerifyError, setLinkVerifyError] = useState<string | null>(null);
+
   useEffect(() => {
-    ensureSession().then(async () => {
-      const { data } = await supabase.auth.getUser();
-      setEmail(data.user?.email ?? null);
-      setLoading(false);
-    });
+    ensureSession().then(refreshUser);
   }, []);
+
+  async function refreshUser() {
+    const { data } = await supabase.auth.getUser();
+    setEmail(data.user?.email ?? null);
+    setLoading(false);
+  }
 
   async function handleSaveEmail(e: React.FormEvent) {
     e.preventDefault();
@@ -41,6 +51,26 @@ export default function AccountPage() {
     }
   }
 
+  async function handleVerifyLinkOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setLinkVerifyStatus("sending");
+    setLinkVerifyError(null);
+    const { error } = await supabase.auth.verifyOtp({
+      email: linkEmail,
+      token: linkOtpCode,
+      type: "email_change",
+    });
+    if (error) {
+      setLinkVerifyStatus("error");
+      setLinkVerifyError(error.message);
+    } else {
+      setLinkVerifyStatus("idle");
+      setLinkStatus("idle");
+      setLinkOtpCode("");
+      await refreshUser();
+    }
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoginStatus("sending");
@@ -54,6 +84,26 @@ export default function AccountPage() {
       setLoginError(error.message);
     } else {
       setLoginStatus("sent");
+    }
+  }
+
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setVerifyStatus("sending");
+    setVerifyError(null);
+    const { error } = await supabase.auth.verifyOtp({
+      email: loginEmail,
+      token: otpCode,
+      type: "email",
+    });
+    if (error) {
+      setVerifyStatus("error");
+      setVerifyError(error.message);
+    } else {
+      setVerifyStatus("idle");
+      setLoginStatus("idle");
+      setOtpCode("");
+      await refreshUser();
     }
   }
 
@@ -93,9 +143,32 @@ export default function AccountPage() {
             </button>
           </form>
           {linkStatus === "sent" && (
-            <p className="mt-2 text-sm text-zinc-400">
-              Check your email and click the link to confirm.
-            </p>
+            <form onSubmit={handleVerifyLinkOtp} className="mt-4">
+              <p className="mb-2 text-sm text-zinc-400">
+                Check your email for a 6-digit code and enter it below — no need to open Safari.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  required
+                  value={linkOtpCode}
+                  onChange={(e) => setLinkOtpCode(e.target.value)}
+                  placeholder="123456"
+                  className="flex-1 rounded-full border border-zinc-700 bg-transparent px-4 py-2.5 text-sm tracking-widest text-white placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
+                />
+                <button
+                  type="submit"
+                  disabled={linkVerifyStatus === "sending"}
+                  className="rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition disabled:opacity-50"
+                >
+                  {linkVerifyStatus === "sending" ? "Verifying…" : "Verify"}
+                </button>
+              </div>
+              {linkVerifyStatus === "error" && (
+                <p className="mt-2 text-sm text-red-400">{linkVerifyError}</p>
+              )}
+            </form>
           )}
           {linkStatus === "error" && (
             <p className="mt-2 text-sm text-red-400">{linkError}</p>
@@ -125,9 +198,32 @@ export default function AccountPage() {
           </button>
         </form>
         {loginStatus === "sent" && (
-          <p className="mt-2 text-sm text-zinc-400">
-            Check your email and click the link to log in.
-          </p>
+          <form onSubmit={handleVerifyOtp} className="mt-4">
+            <p className="mb-2 text-sm text-zinc-400">
+              Check your email for a 6-digit code and enter it below — no need to open Safari.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                required
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value)}
+                placeholder="123456"
+                className="flex-1 rounded-full border border-zinc-700 bg-transparent px-4 py-2.5 text-sm tracking-widest text-white placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={verifyStatus === "sending"}
+                className="rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition disabled:opacity-50"
+              >
+                {verifyStatus === "sending" ? "Verifying…" : "Verify"}
+              </button>
+            </div>
+            {verifyStatus === "error" && (
+              <p className="mt-2 text-sm text-red-400">{verifyError}</p>
+            )}
+          </form>
         )}
         {loginStatus === "error" && (
           <p className="mt-2 text-sm text-red-400">{loginError}</p>
