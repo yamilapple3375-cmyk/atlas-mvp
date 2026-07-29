@@ -20,6 +20,14 @@ interface TmdbDiscoverResponse {
   results: TmdbDiscoverItem[];
 }
 
+interface TmdbSearchItem extends TmdbDiscoverItem {
+  media_type?: string;
+}
+
+interface TmdbSearchResponse {
+  results: TmdbSearchItem[];
+}
+
 interface TmdbDetail {
   title?: string;
   name?: string;
@@ -114,6 +122,27 @@ export async function discoverTv(params: DiscoverParams): Promise<DiscoverItem[]
     page: params.page,
   });
   return data.results.map((item) => mapItem(item, "tv"));
+}
+
+export interface SearchResultItem extends DiscoverItem {
+  mediaType: "movie" | "tv";
+}
+
+export async function searchTitles(query: string): Promise<SearchResultItem[]> {
+  const data = await tmdbGet<TmdbSearchResponse>("/search/multi", {
+    query,
+    include_adult: false,
+    page: 1,
+  });
+  return data.results
+    .filter(
+      (item): item is TmdbSearchItem & { media_type: "movie" | "tv" } =>
+        item.media_type === "movie" || item.media_type === "tv",
+    )
+    .map((item) => ({
+      ...mapItem(item, item.media_type),
+      mediaType: item.media_type,
+    }));
 }
 
 export async function getRuntimeMinutes(

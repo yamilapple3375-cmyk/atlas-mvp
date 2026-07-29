@@ -79,7 +79,25 @@ export default function LibraryPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-16">
-      <div className="mb-8 flex items-center justify-end text-sm text-zinc-500">
+      <div className="mb-8 flex items-center justify-between text-sm text-zinc-500">
+        <Link
+          href="/search"
+          aria-label="Search"
+          className="flex items-center gap-2 text-zinc-300 hover:text-white"
+        >
+          <svg
+            className="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          Search
+        </Link>
         <Link href="/onboarding" className="underline underline-offset-4 hover:text-zinc-300">
           Redo my profile
         </Link>
