@@ -67,15 +67,6 @@ export default function DiscoveryWeeklyPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-6 py-16">
-      <div className="mb-6 flex items-center justify-between text-sm text-zinc-500">
-        <Link href="/recommendation" className="underline underline-offset-4 hover:text-zinc-300">
-          Get a recommendation
-        </Link>
-        <Link href="/library" className="underline underline-offset-4 hover:text-zinc-300">
-          My Library
-        </Link>
-      </div>
-
       <p className="text-xs font-medium uppercase tracking-widest text-zinc-500">
         ✨ Discovery of the Week
       </p>

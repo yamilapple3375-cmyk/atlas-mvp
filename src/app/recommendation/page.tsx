@@ -133,17 +133,9 @@ export default function RecommendationPage() {
         <Link href="/context" className="underline underline-offset-4 hover:text-zinc-300">
           Change context
         </Link>
-        <div className="flex gap-4">
-          <Link href="/library" className="underline underline-offset-4 hover:text-zinc-300">
-            My Library
-          </Link>
-          <Link href="/account" className="underline underline-offset-4 hover:text-zinc-300">
-            Account
-          </Link>
-          <Link href="/onboarding" className="underline underline-offset-4 hover:text-zinc-300">
-            Redo my profile
-          </Link>
-        </div>
+        <Link href="/onboarding" className="underline underline-offset-4 hover:text-zinc-300">
+          Redo my profile
+        </Link>
       </div>
 
       {loading && (

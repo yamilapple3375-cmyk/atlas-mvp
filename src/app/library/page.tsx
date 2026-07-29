@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getHistory, getProfile } from "@/lib/profile";
+import { addHistoryEntry, getHistory, getProfile } from "@/lib/profile";
 import { GenreDef, genresForItem, GENRES } from "@/lib/genres";
 import { FeedbackValue, MediaType } from "@/lib/types";
 
@@ -88,6 +88,31 @@ export default function LibraryPage() {
     };
   }, [router]);
 
+  async function toggleFavorite(item: LibraryItem) {
+    const nextFeedback: FeedbackValue = item.feedback === "like" ? "seen" : "like";
+    setItems((current) =>
+      current
+        ? current.map((i) =>
+            i.id === item.id && i.mediaType === item.mediaType
+              ? { ...i, feedback: nextFeedback }
+              : i,
+          )
+        : current,
+    );
+    try {
+      await addHistoryEntry({
+        id: item.id,
+        mediaType: item.mediaType,
+        title: item.title,
+        feedback: nextFeedback,
+        genreIds: item.genreIds,
+        at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("Couldn't update favorite:", err);
+    }
+  }
+
   const favorites = items?.filter((item) => item.feedback === "like") ?? [];
   const genreBuckets: { def: GenreDef; items: LibraryItem[] }[] =
     items === null
@@ -101,18 +126,10 @@ export default function LibraryPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-16">
-      <div className="mb-8 flex items-center justify-between text-sm text-zinc-500">
-        <Link href="/recommendation" className="underline underline-offset-4 hover:text-zinc-300">
-          Get a recommendation
+      <div className="mb-8 flex items-center justify-end text-sm text-zinc-500">
+        <Link href="/onboarding" className="underline underline-offset-4 hover:text-zinc-300">
+          Redo my profile
         </Link>
-        <div className="flex gap-4">
-          <Link href="/account" className="underline underline-offset-4 hover:text-zinc-300">
-            Account
-          </Link>
-          <Link href="/onboarding" className="underline underline-offset-4 hover:text-zinc-300">
-            Redo my profile
-          </Link>
-        </div>
       </div>
 
       <h1 className="text-2xl font-semibold">My Library</h1>
@@ -133,17 +150,30 @@ export default function LibraryPage() {
       )}
 
       {favorites.length > 0 && (
-        <PosterRow title="Favorites" items={favorites} />
+        <PosterRow title="Favorites" items={favorites} onToggleFavorite={toggleFavorite} />
       )}
 
       {genreBuckets.map(({ def, items: bucketItems }) => (
-        <PosterRow key={def.key} title={def.label} items={bucketItems} />
+        <PosterRow
+          key={def.key}
+          title={def.label}
+          items={bucketItems}
+          onToggleFavorite={toggleFavorite}
+        />
       ))}
     </main>
   );
 }
 
-function PosterRow({ title, items }: { title: string; items: LibraryItem[] }) {
+function PosterRow({
+  title,
+  items,
+  onToggleFavorite,
+}: {
+  title: string;
+  items: LibraryItem[];
+  onToggleFavorite: (item: LibraryItem) => void;
+}) {
   return (
     <div className="mt-10">
       <p className="mb-3 text-sm font-medium text-zinc-500">
@@ -152,19 +182,32 @@ function PosterRow({ title, items }: { title: string; items: LibraryItem[] }) {
       <div className="flex gap-3 overflow-x-auto pb-1">
         {items.map((item) => (
           <div key={`${item.mediaType}-${item.id}`} className="w-24 shrink-0 text-center">
-            {item.posterUrl ? (
-              <Image
-                src={item.posterUrl}
-                alt={item.title}
-                width={96}
-                height={144}
-                className="rounded-md object-cover"
-              />
-            ) : (
-              <div className="flex h-[144px] w-[96px] items-center justify-center rounded-md bg-zinc-900 text-[10px] text-zinc-600">
-                No image
-              </div>
-            )}
+            <div className="relative">
+              {item.posterUrl ? (
+                <Image
+                  src={item.posterUrl}
+                  alt={item.title}
+                  width={96}
+                  height={144}
+                  className="rounded-md object-cover"
+                />
+              ) : (
+                <div className="flex h-[144px] w-[96px] items-center justify-center rounded-md bg-zinc-900 text-[10px] text-zinc-600">
+                  No image
+                </div>
+              )}
+              <button
+                onClick={() => onToggleFavorite(item)}
+                aria-label={item.feedback === "like" ? "Remove favorite" : "Mark as favorite"}
+                className={`absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full text-xs transition ${
+                  item.feedback === "like"
+                    ? "bg-white text-black"
+                    : "bg-black/60 text-white hover:bg-black/80"
+                }`}
+              >
+                {item.feedback === "like" ? "♥" : "♡"}
+              </button>
+            </div>
             <p className="mt-1 truncate text-xs text-zinc-500">{item.title}</p>
           </div>
         ))}

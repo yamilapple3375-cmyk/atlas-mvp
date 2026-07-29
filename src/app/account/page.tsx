@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ensureSession, supabase } from "@/lib/supabaseClient";
 
@@ -60,15 +59,6 @@ export default function AccountPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-6 py-16">
-      <div className="mb-8 flex items-center justify-between text-sm text-zinc-500">
-        <Link href="/library" className="underline underline-offset-4 hover:text-zinc-300">
-          My Library
-        </Link>
-        <Link href="/recommendation" className="underline underline-offset-4 hover:text-zinc-300">
-          Get a recommendation
-        </Link>
-      </div>
-
       <h1 className="text-2xl font-semibold">Your account</h1>
 
       {loading ? (
