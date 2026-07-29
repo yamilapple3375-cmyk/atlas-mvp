@@ -99,7 +99,6 @@ export default function FavoritesPage() {
           items={bucketItems}
           onToggleFavorite={toggleFavorite}
           onOpen={openDetail}
-          wrap
         />
       ))}
 
