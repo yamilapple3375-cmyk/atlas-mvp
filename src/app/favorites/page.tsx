@@ -7,10 +7,12 @@ import { FeedbackValue } from "@/lib/types";
 import { LibraryItem, useLibraryItems } from "@/lib/useLibraryItems";
 import PosterRow from "@/components/PosterRow";
 import MediaDetailModal, { ItemDetail } from "@/components/MediaDetailModal";
+import MediaTypeToggle, { MediaFilter } from "@/components/MediaTypeToggle";
 
 export default function FavoritesPage() {
   const { items, setItems, error } = useLibraryItems();
 
+  const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
   const [detail, setDetail] = useState<ItemDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -65,7 +67,10 @@ export default function FavoritesPage() {
     setDetailError(null);
   }
 
-  const favorites = items?.filter((item) => item.feedback === "like") ?? [];
+  const allFavorites = items?.filter((item) => item.feedback === "like") ?? [];
+  const favorites = allFavorites.filter(
+    (item) => mediaFilter === "all" || item.mediaType === mediaFilter,
+  );
   const genreBuckets: { def: GenreDef; items: LibraryItem[] }[] = GENRES.map((def) => ({
     def,
     items: favorites.filter((item) =>
@@ -80,15 +85,27 @@ export default function FavoritesPage() {
         Everything you&apos;ve marked with a ♥.
       </p>
 
+      {allFavorites.length > 0 && (
+        <div className="mt-6">
+          <MediaTypeToggle value={mediaFilter} onChange={setMediaFilter} />
+        </div>
+      )}
+
       {error && <p className="mt-6 text-sm text-zinc-300">{error}</p>}
 
       {items === null && !error && (
         <p className="mt-10 text-center text-sm text-zinc-500">Loading your favorites…</p>
       )}
 
-      {items !== null && favorites.length === 0 && (
+      {items !== null && allFavorites.length === 0 && (
         <p className="mt-10 text-center text-sm text-zinc-500">
           No favorites yet. Mark a ♡ in My Library or after a recommendation to add one here.
+        </p>
+      )}
+
+      {allFavorites.length > 0 && favorites.length === 0 && (
+        <p className="mt-10 text-center text-sm text-zinc-500">
+          Nothing here yet for {mediaFilter === "movie" ? "movies" : "series"}.
         </p>
       )}
 

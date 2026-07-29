@@ -8,10 +8,12 @@ import { FeedbackValue } from "@/lib/types";
 import { LibraryItem, useLibraryItems } from "@/lib/useLibraryItems";
 import PosterRow from "@/components/PosterRow";
 import MediaDetailModal, { ItemDetail } from "@/components/MediaDetailModal";
+import MediaTypeToggle, { MediaFilter } from "@/components/MediaTypeToggle";
 
 export default function LibraryPage() {
   const { items, setItems, error } = useLibraryItems();
 
+  const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
   const [detail, setDetail] = useState<ItemDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -66,13 +68,15 @@ export default function LibraryPage() {
     setDetailError(null);
   }
 
-  const favorites = items?.filter((item) => item.feedback === "like") ?? [];
+  const filteredItems =
+    items?.filter((item) => mediaFilter === "all" || item.mediaType === mediaFilter) ?? [];
+  const favorites = filteredItems.filter((item) => item.feedback === "like");
   const genreBuckets: { def: GenreDef; items: LibraryItem[] }[] =
     items === null
       ? []
       : GENRES.map((def) => ({
           def,
-          items: items.filter((item) =>
+          items: filteredItems.filter((item) =>
             genresForItem(item.mediaType, item.genreIds).some((g) => g.key === def.key),
           ),
         })).filter((bucket) => bucket.items.length > 0);
@@ -108,6 +112,12 @@ export default function LibraryPage() {
         Everything you&apos;ve rated, always at hand.
       </p>
 
+      {items !== null && items.length > 0 && (
+        <div className="mt-6">
+          <MediaTypeToggle value={mediaFilter} onChange={setMediaFilter} />
+        </div>
+      )}
+
       {error && <p className="mt-6 text-sm text-zinc-300">{error}</p>}
 
       {items === null && !error && (
@@ -117,6 +127,12 @@ export default function LibraryPage() {
       {items !== null && items.length === 0 && (
         <p className="mt-10 text-center text-sm text-zinc-500">
           Your library is empty. Get a recommendation and rate it — it&apos;ll show up here.
+        </p>
+      )}
+
+      {items !== null && items.length > 0 && filteredItems.length === 0 && (
+        <p className="mt-10 text-center text-sm text-zinc-500">
+          Nothing here yet for {mediaFilter === "movie" ? "movies" : "series"}.
         </p>
       )}
 

@@ -10,6 +10,7 @@ import MediaDetailModal, { ItemDetail } from "@/components/MediaDetailModal";
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<LibraryItem[]>([]);
+  const [matchedPerson, setMatchedPerson] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const feedbackByKey = useRef(new Map<string, FeedbackValue>());
@@ -58,6 +59,7 @@ export default function SearchPage() {
           }),
         );
         setResults(mapped);
+        setMatchedPerson(data.matchedPerson ?? null);
       } catch (err) {
         setError(err instanceof Error ? err.message : "We couldn't search right now.");
       } finally {
@@ -117,7 +119,10 @@ export default function SearchPage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 py-16">
       <h1 className="text-2xl font-semibold">Search</h1>
-      <p className="mt-1 text-sm text-zinc-500">Find any movie or show, even if it&apos;s not in your library yet.</p>
+      <p className="mt-1 text-sm text-zinc-500">
+        Find any movie or show, even if it&apos;s not in your library yet — or search an actor or
+        director to see everything they&apos;ve worked on.
+      </p>
 
       <div className="mt-6 flex items-center gap-3 rounded-full border border-zinc-800 bg-zinc-950 px-4 py-3">
         <svg
@@ -152,7 +157,13 @@ export default function SearchPage() {
       )}
 
       {query.trim() && !loading && results.length > 0 && (
-        <PosterRow title="Results" items={results} onToggleFavorite={toggleFavorite} onOpen={openDetail} wrap />
+        <PosterRow
+          title={matchedPerson ? `Starring or directed by ${matchedPerson}` : "Results"}
+          items={results}
+          onToggleFavorite={toggleFavorite}
+          onOpen={openDetail}
+          wrap
+        />
       )}
 
       {selectedItem && (

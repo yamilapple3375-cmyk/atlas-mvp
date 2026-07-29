@@ -145,6 +145,65 @@ export async function searchTitles(query: string): Promise<SearchResultItem[]> {
     }));
 }
 
+interface TmdbPersonSearchItem {
+  id: number;
+  name: string;
+  known_for_department?: string;
+  popularity: number;
+}
+
+interface TmdbPersonSearchResponse {
+  results: TmdbPersonSearchItem[];
+}
+
+export interface PersonMatch {
+  id: number;
+  name: string;
+}
+
+export async function searchPerson(query: string): Promise<PersonMatch | null> {
+  const data = await tmdbGet<TmdbPersonSearchResponse>("/search/person", {
+    query,
+    include_adult: false,
+    page: 1,
+  });
+  const best = data.results.sort((a, b) => b.popularity - a.popularity)[0];
+  return best ? { id: best.id, name: best.name } : null;
+}
+
+interface TmdbCreditItem extends TmdbDiscoverItem {
+  media_type?: string;
+  job?: string;
+}
+
+interface TmdbCombinedCreditsResponse {
+  cast: TmdbCreditItem[];
+  crew: TmdbCreditItem[];
+}
+
+export async function getPersonFilmography(personId: number): Promise<SearchResultItem[]> {
+  const data = await tmdbGet<TmdbCombinedCreditsResponse>(
+    `/person/${personId}/combined_credits`,
+    {},
+  );
+  const directed = data.crew.filter((c) => c.job === "Director");
+  const combined = [...data.cast, ...directed]
+    .filter(
+      (item): item is TmdbCreditItem & { media_type: "movie" | "tv" } =>
+        item.media_type === "movie" || item.media_type === "tv",
+    )
+    .sort((a, b) => b.vote_count - a.vote_count);
+
+  const byKey = new Map<string, SearchResultItem>();
+  for (const item of combined) {
+    const key = `${item.media_type}-${item.id}`;
+    if (byKey.has(key)) continue;
+    byKey.set(key, { ...mapItem(item, item.media_type), mediaType: item.media_type });
+  }
+
+  return Array.from(byKey.values()).filter((item) => item.posterUrl !== null);
+}
+
 export async function getRuntimeMinutes(
   id: number,
   mediaType: "movie" | "tv",
