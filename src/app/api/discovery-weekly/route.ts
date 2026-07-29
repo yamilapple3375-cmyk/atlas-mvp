@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { genreIds } from "@/lib/genres";
-import { discoverMovies, discoverTv, getRuntimeMinutes, getWatchProviders, DiscoverItem } from "@/lib/tmdb";
+import {
+  discoverMovies,
+  discoverTv,
+  getRuntimeMinutes,
+  getWatchProviders,
+  getTrailerUrl,
+  DiscoverItem,
+} from "@/lib/tmdb";
 import { matchedFavoriteGenres, computeConfidence } from "@/lib/explain";
 import { getISOWeekKey, hashStringToInt, mulberry32 } from "@/lib/seededRandom";
 import { EntertainmentProfile, FeedbackEntry, MediaType, Recommendation } from "@/lib/types";
@@ -76,9 +83,10 @@ export async function POST(request: Request) {
   const alternatives = pool.filter((c) => c.id !== chosen.id).slice(0, 3);
   const matchedGenres = matchedFavoriteGenres(profile.favoriteGenres, mediaType, chosen.genreIds);
 
-  const [runtimeMinutes, watchProviders] = await Promise.all([
+  const [runtimeMinutes, watchProviders, trailerUrl] = await Promise.all([
     getRuntimeMinutes(chosen.id, mediaType).catch(() => null),
     getWatchProviders(chosen.id, mediaType).catch(() => []),
+    getTrailerUrl(chosen.id, mediaType).catch(() => null),
   ]);
 
   const recommendation: Recommendation & { weekKey: string } = {
@@ -94,6 +102,7 @@ export async function POST(request: Request) {
     confidence: computeConfidence(matchedGenres.length, profile.favoriteGenres.length, chosen.voteAverage),
     genreIds: chosen.genreIds,
     watchProviders,
+    trailerUrl,
     alternatives: alternatives.map((a) => ({ id: a.id, mediaType, title: a.title, posterUrl: a.posterUrl, year: a.year })),
     weekKey,
   };

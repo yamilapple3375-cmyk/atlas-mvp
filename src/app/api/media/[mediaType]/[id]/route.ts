@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMediaDetails, getWatchProviders } from "@/lib/tmdb";
+import { getMediaDetails, getWatchProviders, getTrailerUrl } from "@/lib/tmdb";
 import { MediaType } from "@/lib/types";
 
 export async function GET(
@@ -15,11 +15,12 @@ export async function GET(
   }
 
   try {
-    const [details, watchProviders] = await Promise.all([
+    const [details, watchProviders, trailerUrl] = await Promise.all([
       getMediaDetails(id, mediaType),
       getWatchProviders(id, mediaType).catch(() => []),
+      getTrailerUrl(id, mediaType).catch(() => null),
     ]);
-    return NextResponse.json({ ...details, mediaType, watchProviders });
+    return NextResponse.json({ ...details, mediaType, watchProviders, trailerUrl });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: `We couldn't reach TMDB: ${message}` }, { status: 502 });

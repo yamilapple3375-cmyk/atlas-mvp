@@ -181,3 +181,24 @@ export async function getWatchProviders(
     logoUrl: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
   }));
 }
+
+interface TmdbVideo {
+  key: string;
+  site: string;
+  type: string;
+  official?: boolean;
+}
+
+interface TmdbVideosResponse {
+  results: TmdbVideo[];
+}
+
+export async function getTrailerUrl(
+  id: number,
+  mediaType: "movie" | "tv",
+): Promise<string | null> {
+  const data = await tmdbGet<TmdbVideosResponse>(`/${mediaType}/${id}/videos`, {});
+  const videos = data.results.filter((v) => v.site === "YouTube" && v.type === "Trailer");
+  const best = videos.find((v) => v.official) ?? videos[0];
+  return best ? `https://www.youtube.com/watch?v=${best.key}` : null;
+}

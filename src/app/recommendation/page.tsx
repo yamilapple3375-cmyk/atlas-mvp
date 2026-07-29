@@ -118,6 +118,7 @@ export default function RecommendationPage() {
         confidence: computeConfidence(matched.length, profile.favoriteGenres.length, data.voteAverage),
         genreIds: data.genreIds,
         watchProviders: data.watchProviders,
+        trailerUrl: data.trailerUrl,
         alternatives: [previousPick, ...remainingAlternatives].slice(0, 3),
       });
     } catch (err) {
@@ -213,6 +214,17 @@ export default function RecommendationPage() {
             <p className="mt-4 text-sm leading-relaxed text-zinc-500">
               {recommendation.overview}
             </p>
+          )}
+
+          {recommendation.trailerUrl && (
+            <a
+              href={recommendation.trailerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 text-sm text-zinc-300 underline underline-offset-4 hover:text-white"
+            >
+              ▶ Watch trailer
+            </a>
           )}
 
           {recommendation.watchProviders.length > 0 ? (

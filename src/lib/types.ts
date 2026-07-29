@@ -78,5 +78,6 @@ export interface Recommendation {
   confidence: number;
   genreIds: number[];
   watchProviders: WatchProvider[];
+  trailerUrl: string | null;
   alternatives: RecommendationCandidate[];
 }

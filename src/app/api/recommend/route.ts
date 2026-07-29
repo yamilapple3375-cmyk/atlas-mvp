@@ -5,6 +5,7 @@ import {
   discoverTv,
   getRuntimeMinutes,
   getWatchProviders,
+  getTrailerUrl,
   DiscoverItem,
 } from "@/lib/tmdb";
 import { buildExplanation, computeConfidence, matchedFavoriteGenres } from "@/lib/explain";
@@ -183,9 +184,10 @@ export async function POST(request: Request) {
 
   const learnedBoost = chosen.genreIds.some((id) => (learnedWeights.get(id) ?? 0) > 0);
 
-  const [runtimeMinutes, watchProviders] = await Promise.all([
+  const [runtimeMinutes, watchProviders, trailerUrl] = await Promise.all([
     getRuntimeMinutes(chosen.id, mediaType).catch(() => null),
     getWatchProviders(chosen.id, mediaType).catch(() => []),
+    getTrailerUrl(chosen.id, mediaType).catch(() => null),
   ]);
 
   const recommendation: Recommendation = {
@@ -201,6 +203,7 @@ export async function POST(request: Request) {
     confidence: computeConfidence(matchedGenres.length, profile.favoriteGenres.length, chosen.voteAverage),
     genreIds: chosen.genreIds,
     watchProviders,
+    trailerUrl,
     alternatives: alternatives.map((a) => ({
       id: a.id,
       mediaType,

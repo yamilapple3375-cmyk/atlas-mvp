@@ -123,6 +123,17 @@ export default function DiscoveryWeeklyPage() {
             <p className="mt-4 text-sm leading-relaxed text-zinc-500">{pick.overview}</p>
           )}
 
+          {pick.trailerUrl && (
+            <a
+              href={pick.trailerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 text-sm text-zinc-300 underline underline-offset-4 hover:text-white"
+            >
+              ▶ Watch trailer
+            </a>
+          )}
+
           {pick.watchProviders.length > 0 && (
             <div className="mt-6">
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
