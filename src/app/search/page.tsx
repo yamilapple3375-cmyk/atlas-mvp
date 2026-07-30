@@ -2,10 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { addHistoryEntry, getHistory } from "@/lib/profile";
-import { FeedbackValue } from "@/lib/types";
+import { GENRES } from "@/lib/genres";
+import { FeedbackValue, GenreKey, MediaType } from "@/lib/types";
 import { LibraryItem } from "@/lib/useLibraryItems";
 import PosterRow from "@/components/PosterRow";
 import MediaDetailModal, { ItemDetail } from "@/components/MediaDetailModal";
+
+interface RawSearchResult {
+  id: number;
+  mediaType: "movie" | "tv";
+  title: string;
+  posterUrl: string | null;
+  genreIds: number[];
+}
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
@@ -15,6 +24,14 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null);
   const feedbackByKey = useRef(new Map<string, FeedbackValue>());
   const [libraryKeys, setLibraryKeys] = useState<Set<string>>(new Set());
+
+  const [selectedGenre, setSelectedGenre] = useState<GenreKey | null>(null);
+  const [browseMediaType, setBrowseMediaType] = useState<MediaType>("movie");
+  const [genreResults, setGenreResults] = useState<LibraryItem[]>([]);
+  const [genrePage, setGenrePage] = useState(1);
+  const [genreLoading, setGenreLoading] = useState(false);
+  const [genreHasMore, setGenreHasMore] = useState(true);
+  const [genreError, setGenreError] = useState<string | null>(null);
 
   const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
   const [detail, setDetail] = useState<ItemDetail | null>(null);
@@ -48,13 +65,7 @@ export default function SearchPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "We couldn't search right now.");
         const mapped: LibraryItem[] = (data.results ?? []).map(
-          (r: {
-            id: number;
-            mediaType: "movie" | "tv";
-            title: string;
-            posterUrl: string | null;
-            genreIds: number[];
-          }) => ({
+          (r: RawSearchResult) => ({
             id: r.id,
             mediaType: r.mediaType,
             title: r.title,
@@ -75,9 +86,85 @@ export default function SearchPage() {
     return () => clearTimeout(timeout);
   }, [query]);
 
+  useEffect(() => {
+    if (!selectedGenre) return;
+
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading state for the fetch this effect triggers, not a derivable value
+    setGenreLoading(true);
+    setGenreError(null);
+    fetch(`/api/search?genre=${selectedGenre}&mediaType=${browseMediaType}&page=1`)
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "We couldn't load this genre right now.");
+        if (cancelled) return;
+        const mapped: LibraryItem[] = (data.results ?? []).map((r: RawSearchResult) => ({
+          id: r.id,
+          mediaType: r.mediaType,
+          title: r.title,
+          posterUrl: r.posterUrl,
+          genreIds: r.genreIds,
+          feedback: feedbackByKey.current.get(`${r.mediaType}-${r.id}`) ?? "seen",
+        }));
+        setGenreResults(mapped);
+        setGenrePage(1);
+        setGenreHasMore(mapped.length > 0);
+      })
+      .catch((err) => {
+        if (!cancelled) setGenreError(err instanceof Error ? err.message : "We couldn't load this genre right now.");
+      })
+      .finally(() => {
+        if (!cancelled) setGenreLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGenre, browseMediaType]);
+
+  async function loadMoreGenre() {
+    if (!selectedGenre || genreLoading) return;
+    const nextPage = genrePage + 1;
+    setGenreLoading(true);
+    setGenreError(null);
+    try {
+      const res = await fetch(`/api/search?genre=${selectedGenre}&mediaType=${browseMediaType}&page=${nextPage}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "We couldn't load more right now.");
+      const existingKeys = new Set(genreResults.map((r) => `${r.mediaType}-${r.id}`));
+      const mapped: LibraryItem[] = (data.results ?? [])
+        .filter((r: RawSearchResult) => !existingKeys.has(`${r.mediaType}-${r.id}`))
+        .map((r: RawSearchResult) => ({
+          id: r.id,
+          mediaType: r.mediaType,
+          title: r.title,
+          posterUrl: r.posterUrl,
+          genreIds: r.genreIds,
+          feedback: feedbackByKey.current.get(`${r.mediaType}-${r.id}`) ?? "seen",
+        }));
+      setGenreResults((current) => [...current, ...mapped]);
+      setGenrePage(nextPage);
+      setGenreHasMore((data.results ?? []).length > 0);
+    } catch (err) {
+      setGenreError(err instanceof Error ? err.message : "We couldn't load more right now.");
+    } finally {
+      setGenreLoading(false);
+    }
+  }
+
+  function selectGenre(key: GenreKey) {
+    setQuery("");
+    setSelectedGenre((current) => (current === key ? null : key));
+  }
+
   async function applyFeedback(item: LibraryItem, nextFeedback: FeedbackValue) {
     const key = `${item.mediaType}-${item.id}`;
     setResults((current) =>
+      current.map((i) =>
+        i.id === item.id && i.mediaType === item.mediaType ? { ...i, feedback: nextFeedback } : i,
+      ),
+    );
+    setGenreResults((current) =>
       current.map((i) =>
         i.id === item.id && i.mediaType === item.mediaType ? { ...i, feedback: nextFeedback } : i,
       ),
@@ -114,6 +201,11 @@ export default function SearchPage() {
   async function updateProgress(item: LibraryItem, season: number, episode: number) {
     const key = `${item.mediaType}-${item.id}`;
     setResults((current) =>
+      current.map((i) =>
+        i.id === item.id && i.mediaType === item.mediaType ? { ...i, season, episode } : i,
+      ),
+    );
+    setGenreResults((current) =>
       current.map((i) =>
         i.id === item.id && i.mediaType === item.mediaType ? { ...i, season, episode } : i,
       ),
@@ -189,6 +281,42 @@ export default function SearchPage() {
         />
       </div>
 
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {GENRES.map((g) => (
+            <button
+              key={g.key}
+              type="button"
+              onClick={() => selectGenre(g.key)}
+              className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                selectedGenre === g.key
+                  ? "border-white bg-white text-black"
+                  : "border-zinc-700 text-zinc-300 hover:border-zinc-500"
+              }`}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {selectedGenre && (
+        <div className="mt-4 inline-flex rounded-full border border-zinc-800 bg-zinc-950 p-1">
+          {(["movie", "tv"] as MediaType[]).map((mt) => (
+            <button
+              key={mt}
+              type="button"
+              onClick={() => setBrowseMediaType(mt)}
+              className={`rounded-full px-4 py-1.5 text-sm transition ${
+                browseMediaType === mt ? "bg-white text-black" : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              {mt === "movie" ? "Movies" : "Series"}
+            </button>
+          ))}
+        </div>
+      )}
+
       {error && <p className="mt-6 text-sm text-zinc-300">{error}</p>}
 
       {query.trim() && loading && (
@@ -207,6 +335,42 @@ export default function SearchPage() {
           onOpen={openDetail}
           wrap
         />
+      )}
+
+      {!query.trim() && selectedGenre && (
+        <>
+          {genreError && <p className="mt-6 text-sm text-zinc-300">{genreError}</p>}
+
+          {genreLoading && genreResults.length === 0 && (
+            <p className="mt-10 text-center text-sm text-zinc-500">Loading…</p>
+          )}
+
+          {!genreLoading && !genreError && genreResults.length === 0 && (
+            <p className="mt-10 text-center text-sm text-zinc-500">Nothing found for this genre.</p>
+          )}
+
+          {genreResults.length > 0 && (
+            <>
+              <PosterRow
+                title={GENRES.find((g) => g.key === selectedGenre)?.label ?? "Results"}
+                items={genreResults}
+                onToggleFavorite={toggleFavorite}
+                onOpen={openDetail}
+                wrap
+              />
+              {genreHasMore && (
+                <button
+                  type="button"
+                  onClick={loadMoreGenre}
+                  disabled={genreLoading}
+                  className="mt-6 w-full rounded-full border border-zinc-700 py-2.5 text-sm text-zinc-300 transition hover:border-zinc-500 disabled:opacity-50"
+                >
+                  {genreLoading ? "Loading…" : "Load more"}
+                </button>
+              )}
+            </>
+          )}
+        </>
       )}
 
       {selectedItem && (
