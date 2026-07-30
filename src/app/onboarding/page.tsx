@@ -59,7 +59,7 @@ export default function OnboardingPage() {
     setSaveError(null);
     try {
       await saveProfile(profile);
-      router.push("/context");
+      router.push("/onboarding/quick-rate");
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "We couldn't save your profile.");
       setSaving(false);

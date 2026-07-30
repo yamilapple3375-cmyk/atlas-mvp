@@ -130,6 +130,15 @@ export interface SearchResultItem extends DiscoverItem {
   mediaType: "movie" | "tv";
 }
 
+/** Pure popularity ranking, no genre filter — maximizes odds of a new user recognizing the title. */
+export async function getPopular(
+  mediaType: "movie" | "tv",
+  page: number,
+): Promise<SearchResultItem[]> {
+  const data = await tmdbGet<TmdbDiscoverResponse>(`/${mediaType}/popular`, { page });
+  return data.results.map((item) => ({ ...mapItem(item, mediaType), mediaType }));
+}
+
 export async function searchTitles(query: string): Promise<SearchResultItem[]> {
   const data = await tmdbGet<TmdbSearchResponse>("/search/multi", {
     query,
