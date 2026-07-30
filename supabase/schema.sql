@@ -74,3 +74,39 @@ create policy "Users manage their own notifications"
   for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Custom lists: user-named collections (e.g. "My All-Time Top 10",
+-- "Best for a Laugh") separate from the always-on Favorites/Library.
+create table if not exists public.lists (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  name text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.lists enable row level security;
+
+create policy "Users manage their own lists"
+  on public.lists
+  for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create table if not exists public.list_items (
+  id bigint generated always as identity primary key,
+  list_id bigint not null references public.lists (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  media_id bigint not null,
+  media_type text not null,
+  title text not null,
+  created_at timestamptz not null default now(),
+  unique (list_id, media_id, media_type)
+);
+
+alter table public.list_items enable row level security;
+
+create policy "Users manage their own list items"
+  on public.list_items
+  for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

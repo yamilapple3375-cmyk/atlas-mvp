@@ -130,9 +130,14 @@ export default function LibraryPage() {
           </svg>
           Search
         </Link>
-        <Link href="/onboarding" className="underline underline-offset-4 hover:text-zinc-300">
-          Redo my profile
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/lists" className="underline underline-offset-4 hover:text-zinc-300">
+            My Lists
+          </Link>
+          <Link href="/onboarding" className="underline underline-offset-4 hover:text-zinc-300">
+            Redo my profile
+          </Link>
+        </div>
       </div>
 
       <h1 className="text-2xl font-semibold">My Library</h1>

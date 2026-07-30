@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { WatchProvider } from "@/lib/types";
 import { LibraryItem } from "@/lib/useLibraryItems";
+import AddToListButton from "@/components/AddToListButton";
 
 export interface ItemDetail {
   overview: string;
@@ -205,6 +206,8 @@ export default function MediaDetailModal({
               {item.feedback === "dislike" ? "Not interested" : "🚫 Not interested"}
             </button>
           )}
+
+          <AddToListButton item={{ id: item.id, mediaType: item.mediaType, title: item.title }} />
         </div>
       </div>
     </div>
