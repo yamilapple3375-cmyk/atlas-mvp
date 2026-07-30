@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   addHistoryEntry,
+  addRecentlyShown,
   getContext,
   getHistory,
   getProfile,
+  getRecentlyShown,
 } from "@/lib/profile";
 import { buildExplanation, computeConfidence, matchedFavoriteGenres } from "@/lib/explain";
 import {
@@ -46,10 +48,16 @@ export default function RecommendationPage() {
     setError(null);
     try {
       const history = await getHistory();
+      const recentlyShown = getRecentlyShown();
       const res = await fetch("/api/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile: loadedProfile, context: loadedContext, history }),
+        body: JSON.stringify({
+          profile: loadedProfile,
+          context: loadedContext,
+          history,
+          recentlyShown,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -57,6 +65,7 @@ export default function RecommendationPage() {
         setRecommendation(null);
       } else {
         setRecommendation(data as Recommendation);
+        addRecentlyShown({ id: data.id, mediaType: data.mediaType });
       }
     } catch {
       setError("We couldn't connect to the server.");
@@ -121,6 +130,7 @@ export default function RecommendationPage() {
         trailerUrl: data.trailerUrl,
         alternatives: [previousPick, ...remainingAlternatives].slice(0, 3),
       });
+      addRecentlyShown({ id: data.id, mediaType: data.mediaType });
     } catch (err) {
       console.error("Couldn't switch options:", err);
     } finally {

@@ -27,6 +27,7 @@ interface RecommendRequestBody {
   profile: EntertainmentProfile;
   context: ContextInput;
   history: FeedbackEntry[];
+  recentlyShown?: { id: number; mediaType: MediaType }[];
 }
 
 const MOOD_BOOST: Record<Mood, GenreKey[]> = {
@@ -189,7 +190,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { profile, context, history } = body;
+  const { profile, context, history, recentlyShown } = body;
   if (!profile || !context) {
     return NextResponse.json({ error: "Missing profile or context" }, { status: 400 });
   }
@@ -199,6 +200,9 @@ export async function POST(request: Request) {
   const excludeIds = new Set(
     relevantHistory.filter((e) => e.mediaType === mediaType).map((e) => e.id),
   );
+  for (const shown of recentlyShown ?? []) {
+    if (shown.mediaType === mediaType) excludeIds.add(shown.id);
+  }
   const learnedWeights = computeLearnedWeights(relevantHistory, mediaType);
 
   // The mood the user picked right now is the hard gate on what genres are

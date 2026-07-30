@@ -76,6 +76,39 @@ export function saveContext(context: ContextInput) {
   window.localStorage.setItem(CONTEXT_KEY, JSON.stringify(context));
 }
 
+const RECENTLY_SHOWN_KEY = "atlas_recently_shown";
+const RECENTLY_SHOWN_LIMIT = 15;
+
+export interface RecentlyShownEntry {
+  id: number;
+  mediaType: MediaType;
+}
+
+/**
+ * Titles shown as a recommendation in this browser recently, whether or not
+ * the user gave feedback on them. Purely a short-lived anti-repeat guard —
+ * separate from feedback_history, which only reflects explicit ratings.
+ */
+export function getRecentlyShown(): RecentlyShownEntry[] {
+  if (typeof window === "undefined") return [];
+  const raw = window.localStorage.getItem(RECENTLY_SHOWN_KEY);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw) as RecentlyShownEntry[];
+  } catch {
+    return [];
+  }
+}
+
+export function addRecentlyShown(entry: RecentlyShownEntry) {
+  if (typeof window === "undefined") return;
+  const current = getRecentlyShown().filter(
+    (e) => !(e.id === entry.id && e.mediaType === entry.mediaType),
+  );
+  const next = [...current, entry].slice(-RECENTLY_SHOWN_LIMIT);
+  window.localStorage.setItem(RECENTLY_SHOWN_KEY, JSON.stringify(next));
+}
+
 const PAGE_SIZE = 1000;
 
 export async function getHistory(): Promise<FeedbackEntry[]> {
