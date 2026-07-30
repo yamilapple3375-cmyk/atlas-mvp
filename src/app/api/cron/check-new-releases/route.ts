@@ -34,23 +34,34 @@ export async function GET(request: Request) {
   }
 
   const admin = getSupabaseAdmin();
+  const PAGE_SIZE = 1000;
 
-  const { data: allFeedback, error: feedbackError } = await admin
-    .from("feedback_history")
-    .select("user_id, media_id, media_type, feedback, title")
-    .returns<FeedbackRow[]>();
-
-  if (feedbackError) {
-    return NextResponse.json({ error: feedbackError.message }, { status: 500 });
+  async function fetchAll<T>(table: string, select: string): Promise<T[]> {
+    const rows: T[] = [];
+    for (let page = 0; ; page++) {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data, error } = await admin.from(table).select(select).range(from, to).returns<T[]>();
+      if (error) throw new Error(error.message);
+      rows.push(...(data ?? []));
+      if (!data || data.length < PAGE_SIZE) break;
+    }
+    return rows;
   }
 
-  const { data: notified, error: notifiedError } = await admin
-    .from("notified_releases")
-    .select("*")
-    .returns<NotifiedRow[]>();
-
-  if (notifiedError) {
-    return NextResponse.json({ error: notifiedError.message }, { status: 500 });
+  let allFeedback: FeedbackRow[];
+  let notified: NotifiedRow[];
+  try {
+    allFeedback = await fetchAll<FeedbackRow>(
+      "feedback_history",
+      "user_id, media_id, media_type, feedback, title",
+    );
+    notified = await fetchAll<NotifiedRow>("notified_releases", "*");
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Unknown error" },
+      { status: 500 },
+    );
   }
 
   const byUser = new Map<string, FeedbackRow[]>();

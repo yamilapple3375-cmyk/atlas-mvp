@@ -62,6 +62,7 @@ export interface FeedbackEntry {
 export interface WatchProvider {
   name: string;
   logoUrl: string;
+  fallbackRegion?: string;
 }
 
 export interface RecommendationCandidate {

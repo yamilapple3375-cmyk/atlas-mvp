@@ -110,6 +110,11 @@ export default function MediaDetailModal({
               <div className="mt-6">
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
                   Where to watch
+                  {detail.watchProviders[0]?.fallbackRegion && (
+                    <span className="ml-2 normal-case text-zinc-600">
+                      (not confirmed for your region — showing {detail.watchProviders[0].fallbackRegion} availability)
+                    </span>
+                  )}
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   {detail.watchProviders.map((provider) => (

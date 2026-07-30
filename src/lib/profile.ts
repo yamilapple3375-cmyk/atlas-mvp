@@ -76,18 +76,29 @@ export function saveContext(context: ContextInput) {
   window.localStorage.setItem(CONTEXT_KEY, JSON.stringify(context));
 }
 
+const PAGE_SIZE = 1000;
+
 export async function getHistory(): Promise<FeedbackEntry[]> {
   const userId = await ensureSession();
-  const { data, error } = await supabase
-    .from("feedback_history")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: true })
-    .returns<FeedbackRow[]>();
+  const rows: FeedbackRow[] = [];
 
-  if (error || !data) return [];
+  for (let page = 0; ; page++) {
+    const from = page * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from("feedback_history")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true })
+      .range(from, to)
+      .returns<FeedbackRow[]>();
 
-  return data.map((row) => ({
+    if (error || !data) break;
+    rows.push(...data);
+    if (data.length < PAGE_SIZE) break;
+  }
+
+  return rows.map((row) => ({
     id: row.media_id,
     mediaType: row.media_type as MediaType,
     title: row.title,

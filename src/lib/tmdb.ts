@@ -73,6 +73,8 @@ export interface DiscoverParams {
   runtimeLte?: number;
   voteCountGte?: number;
   sortBy?: string;
+  /** "or" (default) matches any listed genre; "and" requires all of them. */
+  genreMode?: "or" | "and";
 }
 
 export interface DiscoverItem {
@@ -100,7 +102,7 @@ function mapItem(item: TmdbDiscoverItem, mediaType: "movie" | "tv"): DiscoverIte
 
 export async function discoverMovies(params: DiscoverParams): Promise<DiscoverItem[]> {
   const data = await tmdbGet<TmdbDiscoverResponse>("/discover/movie", {
-    with_genres: params.withGenres.join("|") || undefined,
+    with_genres: params.withGenres.join(params.genreMode === "and" ? "," : "|") || undefined,
     without_genres: params.withoutGenres.join(",") || undefined,
     sort_by: params.sortBy ?? "popularity.desc",
     "vote_count.gte": params.voteCountGte ?? 50,
@@ -114,7 +116,7 @@ export async function discoverMovies(params: DiscoverParams): Promise<DiscoverIt
 
 export async function discoverTv(params: DiscoverParams): Promise<DiscoverItem[]> {
   const data = await tmdbGet<TmdbDiscoverResponse>("/discover/tv", {
-    with_genres: params.withGenres.join("|") || undefined,
+    with_genres: params.withGenres.join(params.genreMode === "and" ? "," : "|") || undefined,
     without_genres: params.withoutGenres.join(",") || undefined,
     sort_by: params.sortBy ?? "popularity.desc",
     "vote_count.gte": params.voteCountGte ?? 50,
@@ -314,6 +316,7 @@ interface TmdbWatchProvidersResponse {
 export interface WatchProviderResult {
   name: string;
   logoUrl: string;
+  fallbackRegion?: string;
 }
 
 export async function getWatchProviders(
@@ -327,9 +330,24 @@ export async function getWatchProviders(
   const region = process.env.TMDB_REGION ?? "US";
   const regionData = data.results?.[region];
   const providers = regionData?.flatrate ?? regionData?.ads ?? regionData?.free ?? [];
-  return providers.map((p) => ({
+  if (providers.length > 0) {
+    return providers.map((p) => ({
+      name: p.provider_name,
+      logoUrl: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
+    }));
+  }
+
+  // TMDB's regional streaming coverage (via JustWatch) is much sparser
+  // outside the US, especially for less mainstream titles. Fall back to US
+  // availability rather than showing nothing, but mark it so the UI can be
+  // upfront that it may not apply locally.
+  if (region === "US") return [];
+  const usData = data.results?.US;
+  const usProviders = usData?.flatrate ?? usData?.ads ?? usData?.free ?? [];
+  return usProviders.map((p) => ({
     name: p.provider_name,
     logoUrl: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
+    fallbackRegion: "US",
   }));
 }
 

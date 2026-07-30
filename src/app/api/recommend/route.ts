@@ -7,6 +7,7 @@ import {
   getWatchProviders,
   getTrailerUrl,
   DiscoverItem,
+  DiscoverParams,
 } from "@/lib/tmdb";
 import { buildExplanation, computeConfidence, matchedFavoriteGenres } from "@/lib/explain";
 import { pickWithAi } from "@/lib/claudeRecommend";
@@ -76,6 +77,57 @@ async function fetchCandidatePage(
     return discoverMovies({ withGenres, withoutGenres, page, runtimeGte, runtimeLte });
   }
   return discoverTv({ withGenres, withoutGenres, page });
+}
+
+/**
+ * Narrower supplementary pool: pairs the mood's genre(s) with each of the
+ * user's favorite genres via TMDB's AND semantics, so results are always
+ * mood-safe (the mood genre is required) but more likely to actually match
+ * their taste than the broad mood-only OR pool alone.
+ */
+async function fetchPersonalizedPool(
+  mediaType: MediaType,
+  moodGenreKeys: GenreKey[],
+  favoriteGenreKeys: GenreKey[],
+  withoutGenreKeys: GenreKey[],
+  timeBudget: ContextInput["timeBudget"],
+): Promise<DiscoverItem[]> {
+  const moodIds = genreIds(moodGenreKeys, mediaType);
+  const withoutGenres = genreIds(withoutGenreKeys, mediaType);
+  if (moodIds.length === 0 || favoriteGenreKeys.length === 0) return [];
+
+  const cappedFavorites = favoriteGenreKeys.slice(0, 6);
+  const runtimeGte = mediaType === "movie" ? (timeBudget === "corto" ? undefined : 60) : undefined;
+  const runtimeLte = mediaType === "movie" ? (timeBudget === "corto" ? 95 : 150) : undefined;
+
+  const results = await Promise.all(
+    cappedFavorites.map(async (favKey) => {
+      const favIds = genreIds([favKey], mediaType);
+      if (favIds.length === 0) return [];
+      const params: DiscoverParams = {
+        withGenres: [...moodIds, ...favIds],
+        withoutGenres,
+        page: 1,
+        genreMode: "and",
+        runtimeGte,
+        runtimeLte,
+      };
+      try {
+        return mediaType === "movie" ? await discoverMovies(params) : await discoverTv(params);
+      } catch {
+        return [];
+      }
+    }),
+  );
+
+  const seen = new Set<number>();
+  const merged: DiscoverItem[] = [];
+  for (const item of results.flat()) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    merged.push(item);
+  }
+  return merged;
 }
 
 async function fetchCandidatePool(
@@ -165,6 +217,21 @@ export async function POST(request: Request) {
       context.timeBudget,
       startPage,
     );
+
+    const personalized = await fetchPersonalizedPool(
+      mediaType,
+      moodBoost,
+      profile.favoriteGenres,
+      profile.avoidGenres,
+      context.timeBudget,
+    );
+    const seenIds = new Set(candidates.map((c) => c.id));
+    for (const item of personalized) {
+      if (seenIds.has(item.id)) continue;
+      seenIds.add(item.id);
+      candidates.push(item);
+    }
+
     candidates = candidates.filter((c) => !excludeIds.has(c.id));
 
     if (candidates.length === 0) {
